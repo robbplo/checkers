@@ -17,11 +17,18 @@ class Game
         $game->setupPlayers();
         $game->setupPieces();
 
-        $game->render();
+
+        while ($game->inProgress) {
+            $game->render();
+            $game->promptMove();
+        }
     }
 
     public function render(): void
     {
+        // Clear command line
+        system('clear');
+
         $spacer = '  _ _ _ _ _ _ _ _';
         $rows = range(8, 1);
         $columns = range(1, 8);
@@ -49,7 +56,28 @@ class Game
         print $columnNumbers . "\n\n";
     }
 
-    public function pieceInPosition(int $row, int $column): Piece|null
+    protected function promptMove(): bool
+    {
+        $input = readline('Make your move:');
+
+        if (!preg_match('/^\d \d \d \d$/', $input)) {
+            print "Invalid input. \n\n";
+            return $this->promptMove();
+        }
+
+        [$fromRow, $fromColumn, $toRow, $toColumn] = explode(' ', $input);
+
+        $piece = $this->pieceInPosition($fromRow, $fromColumn);
+
+        if ($piece === null) {
+            print "No piece in position {$fromRow} {$fromColumn}";
+            return false;
+        }
+
+        return $piece->move($toRow, $toColumn);
+    }
+
+    protected function pieceInPosition(int $row, int $column): Piece|null
     {
         $foundPieces = array_filter($this->pieces, fn (Piece $piece) => $piece->isAtPosition($row, $column));
 

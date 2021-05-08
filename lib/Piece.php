@@ -14,10 +14,14 @@ class Piece
         $this->owner = $owner;
     }
 
-    public function move(int $row, int $column)
+    public function move(int $row, int $column): bool
     {
+        // Validate move
+
         $this->row = $row;
         $this->column = $column;
+
+        return true;
     }
 
     public function pieceIndicator(): string
