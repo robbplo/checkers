@@ -66,7 +66,7 @@ class Game
         }
 
         echo $this->message . "\n";
-
+        $this->message = null;
     }
 
     protected function setMessage(string $message): void
@@ -97,15 +97,20 @@ class Game
         }
 
         $piece->move($row, $column);
+
         return true;
     }
 
     protected function validateMove(?Piece $piece, int $row, int $column): bool
     {
-        $jumpingOverPiece = false;
-
         if ($piece === null) {
             $this->setMessage("No piece in position {$row} {$column}.");
+            return false;
+        }
+
+        // Need to change when implementing AI
+        if (!$piece->owner->isUser()) {
+            $this->setMessage('You can only move your own pieces.');
             return false;
         }
 
@@ -130,7 +135,7 @@ class Game
         }
 
         if ($row < 1 || $row > 8 || $column < 1 || $column > 8) {
-            $this->setMessage('Cannot move piece outside of board.');
+            $this->setMessage('You cannot move pieces outside of board.');
             return false;
         }
 
@@ -139,8 +144,26 @@ class Game
             return false;
         }
 
-        if ($jumpingMove && ! $jumpingOverPiece) {
-            
+        $rowBetween = $row - 1;
+
+        if ($column > $piece->column) {
+            $columnBetween = $column - 1;
+        } else {
+            $columnBetween = $column + 1;
+        }
+
+        $jumpingOverPiece = $this->pieceInPosition($rowBetween, $columnBetween);
+
+        if ($jumpingMove) {
+            if ($jumpingOverPiece === null) {
+                $this->setMessage('You can only jump over pieces.');
+                return false;
+            }
+            if ($jumpingOverPiece->owner->isUser()) {
+                $this->setMessage('You cannot jump over your own pieces.');
+                return false;
+            }
+
         }
 
         return true;
@@ -165,6 +188,9 @@ class Game
 
     protected function setupPieces(): void
     {
+        // @todo remove testing piece
+        $this->pieces[] = new Piece(4, 2, $this->computer);
+
         $rows = $columns = range(1, 8);
 
         foreach ($rows as $row) {

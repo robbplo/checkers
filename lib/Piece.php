@@ -5,7 +5,7 @@ class Piece
 {
     public int $row;
     public int $column;
-    protected Player $owner;
+    public Player $owner;
 
     public function __construct(int $row, int $column, Player $owner)
     {
