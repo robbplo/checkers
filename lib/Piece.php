@@ -3,8 +3,8 @@
 
 class Piece
 {
-    protected int $row;
-    protected int $column;
+    public int $row;
+    public int $column;
     protected Player $owner;
 
     public function __construct(int $row, int $column, Player $owner)
@@ -14,14 +14,10 @@ class Piece
         $this->owner = $owner;
     }
 
-    public function move(int $row, int $column): bool
+    public function move(int $row, int $column): void
     {
-        // Validate move
-
         $this->row = $row;
         $this->column = $column;
-
-        return true;
     }
 
     public function pieceIndicator(): string

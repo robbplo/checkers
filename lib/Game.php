@@ -8,6 +8,8 @@ class Game
     protected Player $user;
     protected Player $computer;
 
+    protected ?string $message = null;
+
     protected bool $inProgress = true;
 
     public static function start(): void
@@ -19,12 +21,13 @@ class Game
 
 
         while ($game->inProgress) {
-            $game->render();
+            $game->renderBoard();
+            $game->displayMessage();
             $game->promptMove();
         }
     }
 
-    public function render(): void
+    public function renderBoard(): void
     {
         // Clear command line
         system('clear');
@@ -34,34 +37,49 @@ class Game
         $columns = range(1, 8);
 
         foreach ($rows as $row) {
-            print $spacer . "\n";
+            echo $spacer . "\n";
 
-            print $row;
+            echo $row;
             foreach ($columns as $column) {
-                print '|';
+                echo '|';
 
                 $piece = $this->pieceInPosition($row, $column);
                 if ($piece === null) {
-                    print ' ';
+                    echo ' ';
                 } else {
-                    print $piece->pieceIndicator();
+                    echo $piece->pieceIndicator();
                 }
             }
-            print "|\n";
+            echo "|\n";
         }
 
         $columnNumbers = '  ' . implode(' ', $columns);
 
-        print $spacer . "\n";
-        print $columnNumbers . "\n\n";
+        echo $spacer . "\n";
+        echo $columnNumbers . "\n\n";
+    }
+
+    protected function displayMessage(): void
+    {
+        if ($this->message === null) {
+            return;
+        }
+
+        echo $this->message . "\n";
+
+    }
+
+    protected function setMessage(string $message): void
+    {
+        $this->message = $message;
     }
 
     protected function promptMove(): bool
     {
         $input = readline('Make your move:');
 
-        if (!preg_match('/^\d \d \d \d$/', $input)) {
-            print "Invalid input. \n\n";
+        if (! preg_match('/^\d \d \d \d$/', $input)) {
+            echo "Invalid input. \n\n";
             return $this->promptMove();
         }
 
@@ -69,12 +87,63 @@ class Game
 
         $piece = $this->pieceInPosition($fromRow, $fromColumn);
 
-        if ($piece === null) {
-            print "No piece in position {$fromRow} {$fromColumn}";
+        return $this->movePiece($piece, $toRow, $toColumn);
+    }
+
+    protected function movePiece(?Piece $piece, int $row, int $column): bool
+    {
+        if (! $this->validateMove($piece, $row, $column)) {
             return false;
         }
 
-        return $piece->move($toRow, $toColumn);
+        $piece->move($row, $column);
+        return true;
+    }
+
+    protected function validateMove(?Piece $piece, int $row, int $column): bool
+    {
+        $jumpingOverPiece = false;
+
+        if ($piece === null) {
+            $this->setMessage("No piece in position {$row} {$column}.");
+            return false;
+        }
+
+        if ($row < $piece->row) {
+            $this->setMessage('Backwards movement is not allowed.');
+            return false;
+        }
+
+        $diagonalMove = (
+            $row === $piece->row + 1
+            && ($column === $piece->column - 1 || $column === $piece->column + 1)
+        );
+
+        $jumpingMove = (
+            $row === $piece->row + 2
+            && ($column === $piece->column - 2 || $column === $piece->column + 2)
+        );
+
+        if (! $diagonalMove && ! $jumpingMove) {
+            $this->setMessage('You can only move pieces one square diagonally.');
+            return false;
+        }
+
+        if ($row < 1 || $row > 8 || $column < 1 || $column > 8) {
+            $this->setMessage('Cannot move piece outside of board.');
+            return false;
+        }
+
+        if ($this->pieceInPosition($row, $column)) {
+            $this->setMessage('You can only move to empty squares.');
+            return false;
+        }
+
+        if ($jumpingMove && ! $jumpingOverPiece) {
+            
+        }
+
+        return true;
     }
 
     protected function pieceInPosition(int $row, int $column): Piece|null
