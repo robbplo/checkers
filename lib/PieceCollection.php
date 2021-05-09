@@ -57,8 +57,7 @@ class PieceCollection
     public function moveJumpsOverEnemyPiece(Piece $piece, int $row, int $column): bool | Piece
     {
         // Assuming piece moved 2 squares diagonally, since it passed validation.
-
-        $rowBetween = $row - 1;
+        $rowBetween = $row - $this->getXDirectionMultiplier();
 
         if ($column > $piece->column) {
             $columnBetween = $column - 1;
@@ -75,6 +74,17 @@ class PieceCollection
         return $jumpingOverPiece;
     }
 
+    protected function getXDirectionMultiplier(): int
+    {
+        if ($this->game->currentTurn->isUser()) {
+            // User pieces must move up;
+            return 1;
+        }
+
+        // Computer pieces must move down.
+        return -1;
+    }
+
     protected function validateMove(?Piece $piece, int $row, int $column): bool
     {
         if ($piece === null) {
@@ -82,8 +92,7 @@ class PieceCollection
             return false;
         }
 
-        // @todo check piece owner is equal to player in current turn;
-        if (!$piece->owner->isUser()) {
+        if (!$piece->owner->equals($this->game->currentTurn)) {
             $this->game->setMessage('You can only move your own pieces.');
             return false;
         }
@@ -96,22 +105,13 @@ class PieceCollection
             return false;
         }
 
-        if ($piece->owner->isUser()) {
-            // User pieces must move up;
-            $playerDirectionModifier = 1;
-        } else {
-            // Computer pieces must move down.
-            $playerDirectionModifier = -1;
-        }
-
-
         $diagonalMove = (
-            $row === $piece->row + 1 * $playerDirectionModifier
+            $row === $piece->row + 1 * $this->getXDirectionMultiplier()
             && ($column === $piece->column - 1 || $column === $piece->column + 1)
         );
 
         $jumpingMove = (
-            $row === $piece->row + 2 * $playerDirectionModifier
+            $row === $piece->row + 2 * $this->getXDirectionMultiplier()
             && ($column === $piece->column - 2 || $column === $piece->column + 2)
         );
 
@@ -167,6 +167,4 @@ class PieceCollection
             }
         }
     }
-
-
 }

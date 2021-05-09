@@ -26,6 +26,16 @@ class Player
         return $player;
     }
 
+    public function pieceIndicator(): string
+    {
+        if ($this->isUser()) {
+            return 'X';
+        }
+
+        return 'O';
+    }
+
+
     public function equals(Player $player): bool
     {
         return $this->type === $player->type;

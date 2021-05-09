@@ -16,15 +16,6 @@ class Piece
         $this->column = $column;
     }
 
-    public function pieceIndicator(): string
-    {
-        if ($this->owner->isUser()) {
-            return 'X';
-        }
-
-        return 'O';
-    }
-
     public function isAtPosition(int $row, int $column): bool
     {
         return $this->row === $row && $this->column === $column;

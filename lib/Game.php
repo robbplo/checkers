@@ -6,10 +6,11 @@ class Game
 
     public Player $user;
     public Player $computer;
+    public Player $currentTurn;
 
     public ?string $message = null;
 
-    public bool $inProgress = true;
+    public ?Player $winner = null;
 
     public static function start(): void
     {
@@ -19,14 +20,32 @@ class Game
         $game->pieces = new PieceCollection($game);
 
 
-        while ($game->inProgress) {
-            $game->renderBoard();
-            $game->displayMessage();
-            $game->promptMove();
+        $game->startGameLoop();
+
+    }
+
+    protected function startGameLoop(): void
+    {
+        while ($this->winner === null) {
+            $this->renderBoard();
+            $this->displayMessage();
+
+            $this->promptMove();
+            $this->passTurn();
         }
     }
 
-    public function renderBoard(): void
+    protected function passTurn(): void
+    {
+        if ($this->currentTurn->equals($this->user)) {
+            $this->currentTurn = $this->computer;
+            return;
+        }
+
+        $this->currentTurn = $this->user;
+    }
+
+    protected function renderBoard(): void
     {
         // Clear command line
         system('clear');
@@ -46,7 +65,7 @@ class Game
                 if ($piece === null) {
                     echo ' ';
                 } else {
-                    echo $piece->pieceIndicator();
+                    echo $piece->owner->pieceIndicator();
                 }
             }
             echo "|\n";
@@ -75,7 +94,7 @@ class Game
 
     protected function promptMove(): bool
     {
-        $input = readline('Make your move:');
+        $input = trim(readline("[{$this->currentTurn->pieceIndicator()}] Make your move:"));
 
         if (! preg_match('/^\d \d \d \d$/', $input)) {
             echo "Invalid input. \n\n";
@@ -84,7 +103,13 @@ class Game
 
         [$fromRow, $fromColumn, $toRow, $toColumn] = explode(' ', $input);
 
-        return $this->pieces->move($fromRow, $fromColumn, $toRow, $toColumn);
+        $validMove  = $this->pieces->move($fromRow, $fromColumn, $toRow, $toColumn);
+
+        if (!$validMove) {
+            return $this->promptMove();
+        }
+
+        return $validMove;
     }
 
 
@@ -92,5 +117,7 @@ class Game
     {
         $this->user = Player::createUser();
         $this->computer = Player::createComputer();
+
+        $this->currentTurn = $this->user;
     }
 }
