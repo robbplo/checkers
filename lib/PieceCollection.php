@@ -11,8 +11,6 @@ class PieceCollection
     {
         $this->setupPieces();
         $this->moves = new MoveCollection($this);
-        // Message is being set by validator, so this is a quick fix.
-        $this->game->setMessage(null);
     }
 
     public function getPieces(): array
@@ -50,6 +48,9 @@ class PieceCollection
         }
 
         $piece->move($toRow, $toColumn);
+
+        // Message is being set by validator, so this is a quick fix.
+        $this->game->setMessage(null);
 
         return true;
     }
