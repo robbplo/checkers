@@ -3,15 +3,21 @@
 
 class PieceCollection
 {
-    protected Game $game;
     /** @var Piece[] $pieces */
     protected $pieces = [];
+    protected MoveCollection $moves;
 
-    public function __construct(Game $game)
+    public function __construct(protected Game $game)
     {
-        $this->game = $game;
-
         $this->setupPieces();
+        $this->moves = new MoveCollection($this);
+        // Message is being set by validator, so this is a quick fix.
+        $this->game->setMessage(null);
+    }
+
+    public function getPieces(): array
+    {
+        return $this->pieces;
     }
 
     public function pieceInPosition(int $row, int $column): Piece|null
@@ -35,7 +41,11 @@ class PieceCollection
 
         $enemyPiece = $this->moveJumpsOverEnemyPiece($piece, $toRow, $toColumn);
 
-        if ($enemyPiece !== null) {
+        if (! $this->enforceJumpingMove($enemyPiece)) {
+            return false;
+        }
+
+        if ($enemyPiece !== false) {
             $this->removePiece($enemyPiece);
         }
 
@@ -48,16 +58,16 @@ class PieceCollection
     {
         $remaining = array_filter(
             $this->pieces,
-            fn (Piece $x) => !($x->row === $piece->row && $x->column === $piece->column)
+            fn (Piece $x) => ! ($x->row === $piece->row && $x->column === $piece->column)
         );
 
         $this->pieces = array_values($remaining);
     }
 
-    public function moveJumpsOverEnemyPiece(Piece $piece, int $row, int $column): bool | Piece
+    public function moveJumpsOverEnemyPiece(Piece $piece, int $row, int $column): bool|Piece
     {
         // Assuming piece moved 2 squares diagonally, since it passed validation.
-        $rowBetween = $row - $this->getXDirectionMultiplier();
+        $rowBetween = $row - $piece->owner->getRowMultiplier();
 
         if ($column > $piece->column) {
             $columnBetween = $column - 1;
@@ -74,25 +84,14 @@ class PieceCollection
         return $jumpingOverPiece;
     }
 
-    protected function getXDirectionMultiplier(): int
-    {
-        if ($this->game->currentTurn->isUser()) {
-            // User pieces must move up;
-            return 1;
-        }
-
-        // Computer pieces must move down.
-        return -1;
-    }
-
-    protected function validateMove(?Piece $piece, int $row, int $column): bool
+    public function validateMove(?Piece $piece, int $row, int $column): bool
     {
         if ($piece === null) {
             $this->game->setMessage("No piece in that position.");
             return false;
         }
 
-        if (!$piece->owner->equals($this->game->currentTurn)) {
+        if (! $piece->owner->equals($this->game->currentTurn)) {
             $this->game->setMessage('You can only move your own pieces.');
             return false;
         }
@@ -106,12 +105,12 @@ class PieceCollection
         }
 
         $diagonalMove = (
-            $row === $piece->row + 1 * $this->getXDirectionMultiplier()
+            $row === $piece->row + 1 * $piece->owner->getRowMultiplier()
             && ($column === $piece->column - 1 || $column === $piece->column + 1)
         );
 
         $jumpingMove = (
-            $row === $piece->row + 2 * $this->getXDirectionMultiplier()
+            $row === $piece->row + 2 * $piece->owner->getRowMultiplier()
             && ($column === $piece->column - 2 || $column === $piece->column + 2)
         );
 
@@ -130,8 +129,18 @@ class PieceCollection
             return false;
         }
 
-        if ($jumpingMove && !$this->moveJumpsOverEnemyPiece($piece, $row, $column)) {
+        if ($jumpingMove && ! $this->moveJumpsOverEnemyPiece($piece, $row, $column)) {
             $this->game->setMessage('You can only jump over enemy pieces.');
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function enforceJumpingMove(bool|Piece $enemyPiece): bool
+    {
+        if (!$enemyPiece && $this->moves->containsJumpingMove($this->game->currentTurn)) {
+            $this->game->setMessage('You must jump over an enemy piece if possible.');
             return false;
         }
 
@@ -140,9 +149,6 @@ class PieceCollection
 
     protected function setupPieces(): void
     {
-        // @todo remove testing piece
-        $this->pieces[] = new Piece(4, 2, $this->game->computer);
-
         $rows = $columns = range(1, 8);
 
         foreach ($rows as $row) {

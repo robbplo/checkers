@@ -26,13 +26,24 @@ class Player
         return $player;
     }
 
-    public function pieceIndicator(): string
+    public function getPieceIndicator(): string
     {
         if ($this->isUser()) {
             return 'X';
         }
 
         return 'O';
+    }
+
+    public function getRowMultiplier(): int
+    {
+        if ($this->isUser()) {
+            // User pieces must move up;
+            return 1;
+        }
+
+        // Computer pieces must move down.
+        return -1;
     }
 
 

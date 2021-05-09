@@ -30,7 +30,10 @@ class Game
             $this->renderBoard();
             $this->displayMessage();
 
-            $this->promptMove();
+            if (! $this->promptMove()) {
+                continue;
+            }
+
             $this->passTurn();
         }
     }
@@ -65,7 +68,7 @@ class Game
                 if ($piece === null) {
                     echo ' ';
                 } else {
-                    echo $piece->owner->pieceIndicator();
+                    echo $piece->owner->getPieceIndicator();
                 }
             }
             echo "|\n";
@@ -87,14 +90,14 @@ class Game
         $this->message = null;
     }
 
-    public function setMessage(string $message): void
+    public function setMessage(?string $message): void
     {
         $this->message = $message;
     }
 
     protected function promptMove(): bool
     {
-        $input = trim(readline("[{$this->currentTurn->pieceIndicator()}] Make your move:"));
+        $input = trim(readline("[{$this->currentTurn->getPieceIndicator()}] Make your move:"));
 
         if (! preg_match('/^\d \d \d \d$/', $input)) {
             echo "Invalid input. \n\n";
@@ -103,13 +106,7 @@ class Game
 
         [$fromRow, $fromColumn, $toRow, $toColumn] = explode(' ', $input);
 
-        $validMove  = $this->pieces->move($fromRow, $fromColumn, $toRow, $toColumn);
-
-        if (!$validMove) {
-            return $this->promptMove();
-        }
-
-        return $validMove;
+        return $this->pieces->move($fromRow, $fromColumn, $toRow, $toColumn);
     }
 
 
