@@ -96,9 +96,46 @@ class Game
             return false;
         }
 
+        $enemyPiece = $this->moveJumpsOverEnemyPiece($piece, $row, $column);
+
+        if ($enemyPiece !== null) {
+            $this->removePiece($enemyPiece);
+        }
+
         $piece->move($row, $column);
 
         return true;
+    }
+
+    public function removePiece(Piece $piece): void
+    {
+        $remaining = array_filter(
+            $this->pieces,
+            fn (Piece $x) => !($x->row === $piece->row && $x->column === $piece->column)
+        );
+
+        $this->pieces = array_values($remaining);
+    }
+
+    protected function moveJumpsOverEnemyPiece(Piece $piece, int $row, int $column): bool | Piece
+    {
+        // Assuming piece moves 2 squares diagonally, since it passed validation.
+
+        $rowBetween = $row - 1;
+
+        if ($column > $piece->column) {
+            $columnBetween = $column - 1;
+        } else {
+            $columnBetween = $column + 1;
+        }
+
+        $jumpingOverPiece = $this->pieceInPosition($rowBetween, $columnBetween);
+
+        if ($jumpingOverPiece === null || $jumpingOverPiece->owner->equals($piece->owner)) {
+            return false;
+        }
+
+        return $jumpingOverPiece;
     }
 
     protected function validateMove(?Piece $piece, int $row, int $column): bool
@@ -144,26 +181,9 @@ class Game
             return false;
         }
 
-        $rowBetween = $row - 1;
-
-        if ($column > $piece->column) {
-            $columnBetween = $column - 1;
-        } else {
-            $columnBetween = $column + 1;
-        }
-
-        $jumpingOverPiece = $this->pieceInPosition($rowBetween, $columnBetween);
-
-        if ($jumpingMove) {
-            if ($jumpingOverPiece === null) {
-                $this->setMessage('You can only jump over pieces.');
-                return false;
-            }
-            if ($jumpingOverPiece->owner->isUser()) {
-                $this->setMessage('You cannot jump over your own pieces.');
-                return false;
-            }
-
+        if ($jumpingMove && !$this->moveJumpsOverEnemyPiece($piece, $row, $column)) {
+            $this->setMessage('You can only jump over enemy pieces.');
+            return false;
         }
 
         return true;

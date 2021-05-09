@@ -26,6 +26,11 @@ class Player
         return $player;
     }
 
+    public function equals(Player $player): bool
+    {
+        return $this->type === $player->type;
+    }
+
     public function isUser(): bool
     {
         return $this->type === self::USER;
