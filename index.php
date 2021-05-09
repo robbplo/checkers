@@ -1,7 +1,8 @@
 <?php
 
-include_once 'lib/Game.php';
-include_once 'lib/Piece.php';
-include_once 'lib/Player.php';
+// Basic autoloader
+foreach (glob(__DIR__.'/lib/*.php') as $file) {
+    include_once $file;
+}
 
 Game::start();

@@ -3,15 +3,11 @@
 
 class Piece
 {
-    public int $row;
-    public int $column;
-    public Player $owner;
-
-    public function __construct(int $row, int $column, Player $owner)
-    {
-        $this->row = $row;
-        $this->column = $column;
-        $this->owner = $owner;
+    public function __construct(
+        public int $row,
+        public int $column,
+        public Player $owner
+    ) {
     }
 
     public function move(int $row, int $column): void
